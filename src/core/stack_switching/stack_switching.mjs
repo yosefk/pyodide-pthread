@@ -37,5 +37,7 @@ Module.oldJspiSupported = oldJspiSupported;
 Module.jspiSupported = jspiSupported;
 
 if (jspiSupported) {
-  Module.preRun.push(initSuspenders);
+  if(!ENVIRONMENT_IS_PTHREAD) {
+    Module.preRun.push(initSuspenders);
+  }
 }

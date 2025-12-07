@@ -11,9 +11,10 @@ CXX=em++
 all: \
 	all-but-packages \
 	dist/pyodide-lock.json \
-	dist/pyodide.d.ts \
-	dist/snapshot.bin \
+	dist/snapshot.bin
 
+# this won't compile with -pthread, and I didn't go deep enough to fix it
+#	dist/pyodide.d.ts 
 
 all-but-packages: \
 	check \
@@ -57,7 +58,9 @@ src/core/pyodide_pre.gen.dat: src/js/generated/_pyodide.out.js src/core/pre.js s
 # the init function.
 	rm -f $@
 	echo '()<::>{' >> $@                       # zero argument argspec and start body
+	echo 'if(!ENVIRONMENT_IS_PTHREAD) {' >> $@
 	cat src/js/generated/_pyodide.out.js >> $@ # All of _pyodide.out.js is body
+	echo '}' >> $@
 	echo '}' >> $@                             # Close function body
 	cat src/core/stack_switching/stack_switching.out.js >> $@
 	cat src/core/pre.js >> $@                  # Execute pre.js too
@@ -132,8 +135,10 @@ dist/pyodide.asm.js: \
 	# Hopefully we will remove this after emscripten fixes it, upstream issue
 	# emscripten-core/emscripten#16518
 	# Sed nonsense from https://stackoverflow.com/a/13383331
-	$(SED) -i -n -e :a -e '1,7!{P;N;D;};N;ba' dist/pyodide.asm.js
+	#no need to do this with -pthread... $(SED) -i -n -e :a -e '1,7!{P;N;D;};N;ba' dist/pyodide.asm.js
 	echo "globalThis._createPyodideModule = _createPyodideModule;" >> dist/pyodide.asm.js
+
+	python3 tools/fixup-threading-support.py dist/pyodide.asm.js
 
 	@date +"[%F %T] done building pyodide.asm.js."
 
