@@ -1,3 +1,41 @@
+## For building with pthreads (the point of this Pyodide fork):
+
+Why: this will let you spawn threads in a side module loaded as a ctypes.CDLL into Pyodide. It will _not_ make Python threads into
+actual threads under pyodide. See the details [here](https://yosefk.com/blog/enabling-c-threads-in-a-python-wasm-environment.html);
+it also mentions [a simple C++ thread pool](https://github.com/yosefk/BlogCodeSamples/blob/main/worker_pool.h) that works under Wasm (eg TaskFlow deadlocks, not sure why.)
+
+How:
+
+```
+git checkout mt
+```
+
+In the docker (after run_docker, before make):
+
+```
+export EXTRA_CFLAGS="-pthread"
+export EXTRA_LDFLAGS="-pthread -g1 -sMAXIMUM_MEMORY=4GB"
+```
+
+The flag -g1 makes the emscripten output file pyodide.asm.js "readable," which is necessary for tools/fixup-threading-support.py to run.
+You can then minify this file in a post-build step.
+
+Your C code loaded as CDLL by the pyodide runtime and using threads **should be compiled with the emscripten toolchain put under emsdk/** by the pyodide build process.
+
+To build packages:
+
+```
+# the usual clone command:
+git clone https://github.com/pyodide/pyodide-recipes
+
+# here's how to build numpy and msgpack (to take a random example) while avoiding
+# the rebuild of packages already built by the Pyodide Makefile. Note the -s SHARED_MEMORY=1
+# and the C/CXX flags thing
+pyodide build-recipes 'numpy, msgpack,  !hashlib, !liblzma, !libopenssl, !lzma, !pydecimal, !pydoc_data, !sqlite3, !ssl, !tblib, !test' --recipe-dir pyodide-recipes/packages --install --metadata-files --force-rebuild --cflags="$EXTRA_CFLAGS -s SHARED_MEMORY=1" --cxxflags="$EXTRA_CFLAGS -s SHARED_MEMORY=1" --ldflags="$EXTRA_LDFLAGS -s SHARED_MEMORY=1"
+```
+
+The rest of the README is unchanged from the Pyodide baseline version.
+
 <div align="center">
   <a href="https://github.com/pyodide/pyodide">
   <img src="./docs/_static/img/pyodide-logo-readme.png" alt="Pyodide">

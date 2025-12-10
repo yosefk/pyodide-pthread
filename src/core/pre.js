@@ -1,12 +1,15 @@
 const API = Module.API;
 const Hiwire = {};
 const Tests = {};
+var pyproxyIsAlive;
+if(!ENVIRONMENT_IS_PTHREAD) {
 API.tests = Tests;
 API.version = "0.30.0.dev0";
 // This version should be equal to the one in the Makefile.envs
 // TODO: Pass this value dynamically from outside.
 API.abiVersion = "2025_0";
 Module.hiwire = Hiwire;
+}
 
 function getTypeTag(x) {
   try {
@@ -15,7 +18,9 @@ function getTypeTag(x) {
     return "";
   }
 }
+if(!ENVIRONMENT_IS_PTHREAD) {
 API.getTypeTag = getTypeTag;
+}
 
 /**
  * Safe property check
@@ -57,8 +62,10 @@ function hasMethod(obj, prop) {
   }
 }
 
-const pyproxyIsAlive = (px) => !!Module.PyProxy_getAttrsQuiet(px).shared.ptr;
+pyproxyIsAlive = (px) => !!Module.PyProxy_getAttrsQuiet(px).shared.ptr;
+if(!ENVIRONMENT_IS_PTHREAD) {
 API.pyproxyIsAlive = pyproxyIsAlive;
+}
 
 const errNoRet = () => {
   throw new Error(
@@ -76,7 +83,10 @@ function isPromise(obj) {
     return false;
   }
 }
+
+if(!ENVIRONMENT_IS_PTHREAD) {
 API.isPromise = isPromise;
+}
 
 /**
  * Turn any ArrayBuffer view or ArrayBuffer into a Uint8Array.
@@ -91,7 +101,9 @@ function bufferAsUint8Array(arg) {
     return new Uint8Array(arg);
   }
 }
+if(!ENVIRONMENT_IS_PTHREAD) {
 API.typedArrayAsUint8Array = bufferAsUint8Array;
+}
 
 Module.iterObject = function* (object) {
   for (let k in object) {
